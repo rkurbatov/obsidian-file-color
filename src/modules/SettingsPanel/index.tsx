@@ -25,8 +25,11 @@ export const SettingsPanel = () => {
   const [cascadeColors, setCascadeColors] = useState<FileColorPluginSettings['cascadeColors']>(
     plugin.settings.cascadeColors
   )
-  const [colorBackground, setColorBackground] = useState<FileColorPluginSettings['colorBackground']>(
-    plugin.settings.colorBackground
+  const [colorBackgroundFile, setColorBackgroundFile] = useState<FileColorPluginSettings['colorBackgroundFile']>(
+    plugin.settings.colorBackgroundFile
+  )
+  const [colorBackgroundFolder, setColorBackgroundFolder] = useState<FileColorPluginSettings['colorBackgroundFolder']>(
+    plugin.settings.colorBackgroundFolder
   )
   const [changed, setChanged] = useState<boolean>(false)
 
@@ -113,9 +116,16 @@ export const SettingsPanel = () => {
     plugin.applyColorStyles()
   }
 
-  const onChangeColorBackground = () => {
-    setColorBackground(!colorBackground)
-    plugin.settings.colorBackground = !plugin.settings.colorBackground
+  const onChangeColorBackgroundFile = () => {
+    setColorBackgroundFile(!colorBackgroundFile)
+    plugin.settings.colorBackgroundFile = !plugin.settings.colorBackgroundFile
+    plugin.saveSettings()
+    plugin.applyColorStyles()
+  }
+
+  const onChangeColorBackgroundFolder = () => {
+    setColorBackgroundFolder(!colorBackgroundFolder)
+    plugin.settings.colorBackgroundFolder = !plugin.settings.colorBackgroundFolder
     plugin.saveSettings()
     plugin.applyColorStyles()
   }
@@ -180,12 +190,25 @@ export const SettingsPanel = () => {
 
       <SettingItem className='mod-toggle'>
         <SettingItemInfo>
-          <SettingItemName>Color Background</SettingItemName>
-          <SettingItemDescription>Color the background instead of the text.</SettingItemDescription>
+          <SettingItemName>Color File Background</SettingItemName>
+          <SettingItemDescription>Color the background instead of the text of files.</SettingItemDescription>
         </SettingItemInfo>
        
         <SettingItemControl>
-          <div className={'checkbox-container'+(colorBackground?' is-enabled':'')} onClick={onChangeColorBackground}>
+          <div className={'checkbox-container'+(colorBackgroundFile?' is-enabled':'')} onClick={onChangeColorBackgroundFile}>
+            <input type='checkbox'></input>
+          </div>
+        </SettingItemControl>
+      </SettingItem>
+
+      <SettingItem className='mod-toggle'>
+        <SettingItemInfo>
+          <SettingItemName>Color Folder Background</SettingItemName>
+          <SettingItemDescription>Color the background instead of the text of folders.</SettingItemDescription>
+        </SettingItemInfo>
+       
+        <SettingItemControl>
+          <div className={'checkbox-container'+(colorBackgroundFolder?' is-enabled':'')} onClick={onChangeColorBackgroundFolder}>
             <input type='checkbox'></input>
           </div>
         </SettingItemControl>

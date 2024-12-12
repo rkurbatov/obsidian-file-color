@@ -1,4 +1,4 @@
-import { debounce, MenuItem, Plugin } from 'obsidian'
+import { debounce, MenuItem, Plugin, TFolder } from 'obsidian'
 import { SetColorModal } from 'plugin/SetColorModal'
 import { FileColorSettingTab } from 'plugin/FileColorSettingTab'
 
@@ -97,7 +97,8 @@ export class FileColorPlugin extends Plugin {
   applyColorStyles = debounce(this.applyColorStylesInternal, 50, true);
 
   private applyColorStylesInternal() {
-    const cssType = this.settings.colorBackground ? 'background' : 'text'
+    const cssTypeFile = this.settings.colorBackgroundFile ? 'background' : 'text'
+    const cssTypeFolder = this.settings.colorBackgroundFolder ? 'background' : 'text'
 
     const fileExplorers = this.app.workspace.getLeavesOfType('file-explorer')
     fileExplorers.forEach((fileExplorer) => {
@@ -114,7 +115,8 @@ export class FileColorPlugin extends Plugin {
           if (file) {
             itemClasses.push('file-color-file')
             itemClasses.push('file-color-color-' + file.color)
-            itemClasses.push('file-color-type-' + cssType)
+			itemClasses.push('file-folder-color-type-' + cssTypeFolder)
+			itemClasses.push('file-file-color-type-' + cssTypeFile)
             if (this.settings.cascadeColors) {
               itemClasses.push('file-color-cascade')
             }
