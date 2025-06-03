@@ -1,4 +1,4 @@
-import { debounce, MenuItem, Plugin, TFolder } from 'obsidian'
+import { debounce, MenuItem, Plugin } from 'obsidian'
 import { SetColorModal } from 'plugin/SetColorModal'
 import { FileColorSettingTab } from 'plugin/FileColorSettingTab'
 
@@ -6,126 +6,133 @@ import type { FileColorPluginSettings } from 'settings'
 import { defaultSettings } from 'settings'
 
 export class FileColorPlugin extends Plugin {
-  settings: FileColorPluginSettings = defaultSettings
-  saveSettingsInternalDebounced = debounce(this.saveSettingsInternal, 3000, true);
+	settings: FileColorPluginSettings = defaultSettings
+	saveSettingsInternalDebounced = debounce(
+		this.saveSettingsInternal,
+		3000,
+		true
+	)
 
-  async onload() {
-    await this.loadSettings()
+	async onload() {
+		await this.loadSettings()
 
-    this.registerEvent(
-      this.app.workspace.on('file-menu', (menu, file) => {
-        const addFileColorMenuItem = (item: MenuItem) => {
-          item.setTitle('Set color')
-          item.setIcon('palette')
-          item.onClick(() => {
-            new SetColorModal(this, file).open()
-          })
-        }
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, file) => {
+				const addFileColorMenuItem = (item: MenuItem) => {
+					item.setTitle('Set color')
+					item.setIcon('palette')
+					item.onClick(() => {
+						new SetColorModal(this, file).open()
+					})
+				}
 
-        menu.addItem(addFileColorMenuItem)
-      })
-    )
+				menu.addItem(addFileColorMenuItem)
+			})
+		)
 
-    this.app.workspace.onLayoutReady(async () => {
-      this.generateColorStyles()
-      this.applyColorStyles()
-    })
+		this.app.workspace.onLayoutReady(async () => {
+			this.generateColorStyles()
+			this.applyColorStyles()
+		})
 
-    this.registerEvent(
-      this.app.workspace.on('layout-change', () => this.applyColorStyles())
-    )
+		this.registerEvent(
+			this.app.workspace.on('layout-change', () => this.applyColorStyles())
+		)
 
-    this.registerEvent(
-      this.app.vault.on('rename', async (newFile, oldPath) => {
-        this.settings.fileColors
-          .filter((fileColor) => fileColor.path === oldPath)
-          .forEach((fileColor) => {
-            fileColor.path = newFile.path
-          })
-        this.saveSettings()
-        this.applyColorStyles()
-      })
-    )
+		this.registerEvent(
+			this.app.vault.on('rename', async (newFile, oldPath) => {
+				this.settings.fileColors
+					.filter((fileColor) => fileColor.path === oldPath)
+					.forEach((fileColor) => {
+						fileColor.path = newFile.path
+					})
+				this.saveSettings()
+				this.applyColorStyles()
+			})
+		)
 
-    this.registerEvent(
-      this.app.vault.on('delete', async (file) => {
-        this.settings.fileColors = this.settings.fileColors.filter(
-          (fileColor) => !fileColor.path.startsWith(file.path)
-        )
-        this.saveSettings()
-      })
-    )
+		this.registerEvent(
+			this.app.vault.on('delete', async (file) => {
+				this.settings.fileColors = this.settings.fileColors.filter(
+					(fileColor) => !fileColor.path.startsWith(file.path)
+				)
+				this.saveSettings()
+			})
+		)
 
-    this.addSettingTab(new FileColorSettingTab(this.app, this))
-  }
+		this.addSettingTab(new FileColorSettingTab(this.app, this))
+	}
 
-  onunload() {
-    document.getElementById('fileColorPluginStyles')?.remove();
-    document.getElementById('fileColorPluginGooberStyles')?.remove();
-  }
+	onunload() {
+		document.getElementById('fileColorPluginStyles')?.remove()
+		document.getElementById('fileColorPluginGooberStyles')?.remove()
+	}
 
-  async loadSettings() {
-    this.settings = Object.assign({}, defaultSettings, await this.loadData())
-  }
+	async loadSettings() {
+		this.settings = Object.assign({}, defaultSettings, await this.loadData())
+	}
 
-  async saveSettings(immediate?: boolean) {
-    if (immediate) {
-      return this.saveSettingsInternal();
-    }
-    return this.saveSettingsInternalDebounced();
-  }
+	async saveSettings(immediate?: boolean) {
+		if (immediate) {
+			return this.saveSettingsInternal()
+		}
+		return this.saveSettingsInternalDebounced()
+	}
 
-  private saveSettingsInternal() {
-    return this.saveData(this.settings)
-  }
+	private saveSettingsInternal() {
+		return this.saveData(this.settings)
+	}
 
-  generateColorStyles() {
-    let colorStyleEl = document.getElementById('fileColorPluginStyles')
+	generateColorStyles() {
+		let colorStyleEl = document.getElementById('fileColorPluginStyles')
 
-    if (!colorStyleEl) {
-      colorStyleEl = this.app.workspace.containerEl.createEl('style')
-      colorStyleEl.id = 'fileColorPluginStyles'
-    }
+		if (!colorStyleEl) {
+			colorStyleEl = this.app.workspace.containerEl.createEl('style')
+			colorStyleEl.id = 'fileColorPluginStyles'
+		}
 
-    colorStyleEl.innerHTML = this.settings.palette
-      .map(
-        (color) =>
-          `.file-color-color-${color.id} { --file-color-color: ${color.value}; }`
-      )
-      .join('\n')
-  }
-  applyColorStyles = debounce(this.applyColorStylesInternal, 50, true);
+		colorStyleEl.innerHTML = this.settings.palette
+			.map(
+				(color) =>
+					`.file-color-color-${color.id} { --file-color-color: ${color.value}; }`
+			)
+			.join('\n')
+	}
+	applyColorStyles = debounce(this.applyColorStylesInternal, 50, true)
 
-  private applyColorStylesInternal() {
-    const cssTypeFile = this.settings.colorBackgroundFile ? 'background' : 'text'
-    const cssTypeFolder = this.settings.colorBackgroundFolder ? 'background' : 'text'
+	private applyColorStylesInternal() {
+		const cssTypeFile = this.settings.colorBackgroundFile
+			? 'background'
+			: 'text'
+		const cssTypeFolder = this.settings.colorBackgroundFolder
+			? 'background'
+			: 'text'
 
-    const fileExplorers = this.app.workspace.getLeavesOfType('file-explorer')
-    fileExplorers.forEach((fileExplorer) => {
-      Object.entries(fileExplorer.view.fileItems).forEach(
-        ([path, fileItem]) => {
-          const itemClasses = fileItem.el.classList.value
-            .split(' ')
-            .filter((cls) => !cls.startsWith('file-color'))
+		const fileExplorers = this.app.workspace.getLeavesOfType('file-explorer')
+		fileExplorers.forEach((fileExplorer) => {
+			Object.entries(fileExplorer.view.fileItems).forEach(
+				([path, fileItem]) => {
+					const itemClasses = fileItem.el.classList.value
+						.split(' ')
+						.filter((cls) => !cls.startsWith('file-color'))
 
-            const file = this.settings.fileColors.find(
-            (file) => file.path === path
-          )
+					const file = this.settings.fileColors.find(
+						(file) => file.path === path
+					)
 
-          if (file) {
-            itemClasses.push('file-color-file')
-            itemClasses.push('file-color-color-' + file.color)
-			itemClasses.push('file-folder-color-type-' + cssTypeFolder)
-			itemClasses.push('file-file-color-type-' + cssTypeFile)
-            if (this.settings.cascadeColors) {
-              itemClasses.push('file-color-cascade')
-            }
-          }
+					if (file) {
+						itemClasses.push('file-color-file')
+						itemClasses.push('file-color-color-' + file.color)
+						itemClasses.push('file-folder-color-type-' + cssTypeFolder)
+						itemClasses.push('file-file-color-type-' + cssTypeFile)
+						if (this.settings.cascadeColors) {
+							itemClasses.push('file-color-cascade')
+						}
+					}
 
-          fileItem.el.classList.value = itemClasses.join(' ')
-        }
-      )
-    })
-  }
-
+					fileItem.el.classList.value = itemClasses.join(' ')
+				}
+			)
+		})
+	}
 }
